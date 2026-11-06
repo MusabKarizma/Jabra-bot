@@ -73,8 +73,15 @@ def run_bot():
     app = Application.builder().token(BOT_TOKEN).build()
     # اوامر بالسلاش
     app.add_handler(CommandHandler("start", start_cmd))
-    app.add_handler(CommandHandler("ذهب", gold_cmd))
-    app.add_handler(CommandHandler("يورو", euro_cmd))
+    def run_bot():
+    app = Application.builder().token(BOT_TOKEN).build()
+    # امر انجليزي فقط
+    app.add_handler(CommandHandler("start", start_cmd))
+    
+    # اي كلام عربي - نستقبلو كرسالة عادية
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
+    print("Bot polling started...")
+    app.run_polling()
     # كلام عادي بدون سلاش
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
     print("Bot polling started...")
