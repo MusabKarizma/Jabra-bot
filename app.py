@@ -80,8 +80,16 @@ def run_bot():
     print("Bot polling started...")
     app.run_polling()
 
-# ========== 4. التشغيل الرئيسي ==========
-if __name__ == '__main__':
-    threading.Thread(target=bot_loop, daemon=True).start()
-    threading.Thread(target=run_bot, daemon=True).start()
+# ========== 4. التشغيل الرئيسي - ده الصح ==========
+def start_flask():
     app_flask.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
+
+if __name__ == '__main__':
+    # شغل Flask في ثريد جانبي
+    threading.Thread(target=start_flask, daemon=True).start()
+    # شغل البوت لووب جانبي
+    threading.Thread(target=bot_loop, daemon=True).start()
+    
+    # شغل بوت التيليجرام في الرئيسي - لازم يكون في الرئيسي!
+    print("Starting Telegram bot...")
+    run_bot()
