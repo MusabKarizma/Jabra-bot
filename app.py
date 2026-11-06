@@ -1,64 +1,25 @@
-import os, threading, yfinance as yf
-import pandas as pd
-from flask import Flask
-from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
-import ta
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+ import os
+import threading
+import time
+import json
+import urllib.request
+from flask import Flask
+from telegram.ext import Application, CommandHandler
+
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 app_flask = Flask(__name__)
 
-@app_flask.route('/')
-def home():
-    return "Jabra Signals Bot Live - Gold & EURUSD 🚀"
-
-def analyze_pair(symbol="XAUUSD"):
-    yf_symbol = "GC=F" if "XAU" in symbol else "EURUSD=X"
+def send(msg):
     try:
-        data = yf.download(yf_symbol, period="5d", interval="1h", progress=False)
-        close = data['Close']
-        rsi = float(ta.momentum.RSIIndicator(close).rsi().iloc[-1])
-        ema50 = float(ta.trend.EMAIndicator(close, 50).ema_indicator().iloc[-1])
-        ema200 = float(ta.trend.EMAIndicator(close, 200).ema_indicator().iloc[-1])
-        macd = ta.trend.MACD(close)
-        macd_line = float(macd.macd().iloc[-1])
-        macd_sig = float(macd.macd_signal().iloc[-1])
-        price = float(close.iloc[-1])
-        trend = "صاعد 📈" if ema50 > ema200 else "هابط 📉"
-        score = 0
-        if rsi < 35: score+=2
-        elif rsi < 50: score+=1
-        if ema50 > ema200: score+=1
-        if macd_line > macd_sig: score+=1
-        if score >=3: dec="🟢 شراء قوي"
-        elif score==2: dec="🟡 شراء حذر"
-        elif rsi>70: dec="🔴 تشبع شرائي - انتظر"
-        else: dec="⚠️ انتظار"
-        return f"🔍 {symbol}\nالسعر: {price:.2f}\nالاتجاه: {trend}\nRSI: {rsi:.1f}\nMACD: {'شراء' if macd_line>macd_sig else 'بيع'}\n\n💡 {dec}"
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+        data = json.dumps({"chat_id": "YOUR_CHAT_ID", "text": msg, "parse_mode": "Markdown"}).encode()
+        req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+        urllib.request.urlopen(req, timeout=10)
+        print(f"رسلنا: {msg}")
     except Exception as e:
-        return f"خطأ: {e}"
-
-async def start(update, context):
-    await update.message.reply_text("أهلا! 👋\n/ذهب لتحليل الذهب\n/يورو لتحليل اليورو\n/تحليل XAUUSD")
-
-async def gold_cmd(update, context):
-    await update.message.reply_text("⏳ بحلل الذهب...")
-    await update.message.reply_text(analyze_pair("XAUUSD"))
-
-async def euro_cmd(update, context):
-    await update.message.reply_text("⏳ بحلل اليورو...")
-    await update.message.reply_text(analyze_pair("EURUSD"))
-
-def run_bot():
-    app = Application.builder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("ذهب", gold_cmd))
-    app.add_handler(CommandHandler("يورو", euro_cmd))
-    app.run_polling()
-
-   if __name__ == '__main__':
-    threading.Thread(target=run_bot, daemon=True).start()
-    app_flask.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
+        print(e)
 
 def get_price():
     url = "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT"
@@ -68,10 +29,33 @@ def get_price():
 
 def bot_loop():
     time.sleep(5)
-    try:
-        send("✅ *بوت جبرة شغال 24 ساعة يا زعيم*\nالسيرفر اشتغل")
-        buy = get_price()
-        print(f"سعر البداية: {buy}")
-    except Exception as e:
-        print(f"رسلنا: {e}")
-        print(e)
+    send("✅ *بوت جبرة شغال 24 ساعة يا زعيم* \nالسيرفر اشتغل")
+    while True:
+        try:
+            buy = get_price()
+            print(f"سعر البداية: {buy}")
+            time.sleep(60)
+        except Exception as e:
+            print(e)
+            time.sleep(10)
+
+async def gold_cmd(update, context):
+    await update.message.reply_text("ذهب")
+
+async def euro_cmd(update, context):
+    await update.message.reply_text("يورو")
+
+def run_bot():
+    app = Application.builder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("ذهب", gold_cmd))
+    app.add_handler(CommandHandler("يورو", euro_cmd))
+    app.run_polling()
+
+if __name__ == '__main__':
+    threading.Thread(target=bot_loop, daemon=True).start()
+    threading.Thread(target=run_bot, daemon=True).start()
+    app_flask.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
+
+@app_flask.route('/')
+def home():
+    return "Bot Running"
