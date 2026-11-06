@@ -8,7 +8,9 @@ from telegram.ext import Application, CommandHandler
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 app_flask = Flask(__name__)
-
+@app_flask.route('/')
+def home():
+    return "Bot Running"
 def send(msg):
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -54,6 +56,3 @@ if __name__ == '__main__':
     threading.Thread(target=run_bot, daemon=True).start()
     app_flask.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
 
-@app_flask.route('/')
-def home():
-    return "Bot Running"
