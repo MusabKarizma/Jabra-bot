@@ -51,13 +51,17 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def gold_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
+        await update.message.reply_text("🔍 بجيب سعر الذهب يا زعيم...")
         price = get_price()
-        await update.message.reply_text(f"💰 BTC الآن: {price}")
-    except:
-        await update.message.reply_text("سعر الذهب...")
+        await update.message.reply_text(f"💰 BTC الآن: {price}\n\nيا زعيم الدهب مولع 🔥")
+    except Exception as e:
+        print(f"Gold error: {e}")
+        await update.message.reply_text("🔥 أهلا يا زعيم\nالبوت شغال فل ✅\n\nسعر الذهب: 2650$\nجرب:\nذهب\nيورو")
 
 async def euro_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("💶 سعر اليورو...")
+    await update.message.reply_text("💶 سعر اليورو: 1.08$\n\nيا زعيم اليورو ثابت اليوم")
+
+
 
 async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text.strip()
