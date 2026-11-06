@@ -68,35 +68,23 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await start_cmd(update, context)
 
-# ========== 3. الرن بوت مفصول براهو ==========
+
+    # ========== 3. الرن بوت مفصول براهو ==========
 def run_bot():
-    app = Application.builder().token(BOT_TOKEN).build()
-    # اوامر بالسلاش
-    app.add_handler(CommandHandler("start", start_cmd))
-    def run_bot():
     app = Application.builder().token(BOT_TOKEN).build()
     # امر انجليزي فقط
     app.add_handler(CommandHandler("start", start_cmd))
-    
     # اي كلام عربي - نستقبلو كرسالة عادية
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
     print("Bot polling started...")
     app.run_polling()
-    # كلام عادي بدون سلاش
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
-    print("Bot polling started...")
-    app.run_polling()
 
-# ========== 4. التشغيل الرئيسي - ده الصح ==========
+# ========== 4. التشغيل الرئيسي ==========
 def start_flask():
     app_flask.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
 
 if __name__ == '__main__':
-    # شغل Flask في ثريد جانبي
     threading.Thread(target=start_flask, daemon=True).start()
-    # شغل البوت لووب جانبي
     threading.Thread(target=bot_loop, daemon=True).start()
-    
-    # شغل بوت التيليجرام في الرئيسي - لازم يكون في الرئيسي!
     print("Starting Telegram bot...")
     run_bot()
