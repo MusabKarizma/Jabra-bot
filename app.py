@@ -1,18 +1,64 @@
+import os, threading, yfinance as yf
+import pandas as pd
 from flask import Flask
-import threading, time, json, urllib.request, os
+from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes
+import ta
 
-app = Flask(__name__)
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+app_flask = Flask(__name__)
 
-# ===== غير ديل بس =====
-TOKEN = "9093669107:AAHD39rNMs-r39ESOI8VlwmwGqp-QydmEYU"
-CHAT_ID = "8711298563"
-# =======================
+@app_flask.route('/')
+def home():
+    return "Jabra Signals Bot Live - Gold & EURUSD 🚀"
 
-def send(msg):
+def analyze_pair(symbol="XAUUSD"):
+    yf_symbol = "GC=F" if "XAU" in symbol else "EURUSD=X"
     try:
-        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-        data = f"chat_id={CHAT_ID}&text={msg}&parse_mode=Markdown".encode()
-        urllib.request.urlopen(url, data=data, timeout=10)
+        data = yf.download(yf_symbol, period="5d", interval="1h", progress=False)
+        close = data['Close']
+        rsi = float(ta.momentum.RSIIndicator(close).rsi().iloc[-1])
+        ema50 = float(ta.trend.EMAIndicator(close, 50).ema_indicator().iloc[-1])
+        ema200 = float(ta.trend.EMAIndicator(close, 200).ema_indicator().iloc[-1])
+        macd = ta.trend.MACD(close)
+        macd_line = float(macd.macd().iloc[-1])
+        macd_sig = float(macd.macd_signal().iloc[-1])
+        price = float(close.iloc[-1])
+        trend = "صاعد 📈" if ema50 > ema200 else "هابط 📉"
+        score = 0
+        if rsi < 35: score+=2
+        elif rsi < 50: score+=1
+        if ema50 > ema200: score+=1
+        if macd_line > macd_sig: score+=1
+        if score >=3: dec="🟢 شراء قوي"
+        elif score==2: dec="🟡 شراء حذر"
+        elif rsi>70: dec="🔴 تشبع شرائي - انتظر"
+        else: dec="⚠️ انتظار"
+        return f"🔍 {symbol}\nالسعر: {price:.2f}\nالاتجاه: {trend}\nRSI: {rsi:.1f}\nMACD: {'شراء' if macd_line>macd_sig else 'بيع'}\n\n💡 {dec}"
+    except Exception as e:
+        return f"خطأ: {e}"
+
+async def start(update, context):
+    await update.message.reply_text("أهلا! 👋\n/ذهب لتحليل الذهب\n/يورو لتحليل اليورو\n/تحليل XAUUSD")
+
+async def gold_cmd(update, context):
+    await update.message.reply_text("⏳ بحلل الذهب...")
+    await update.message.reply_text(analyze_pair("XAUUSD"))
+
+async def euro_cmd(update, context):
+    await update.message.reply_text("⏳ بحلل اليورو...")
+    await update.message.reply_text(analyze_pair("EURUSD"))
+
+def run_bot():
+    app = Application.builder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("ذهب", gold_cmd))
+    app.add_handler(CommandHandler("يورو", euro_cmd))
+    app.run_polling()
+
+if __name__ == '__main__':
+    threading.Thread(target=run_bot, daemon=True).start()
+    app_flask.run(host='0.0.0.0', port=int(os.environ.get("PORT",10000)))(url, data=data, timeout=10)
         print(f"رسلنا: {msg}")
     except Exception as e:
         print(e)
